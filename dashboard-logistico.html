@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dashboard Logístico — Monitoramento de Entregas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f1117;
+  --surface: #1a1d27;
+  --surface2: #22263a;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #e8eaf0;
+  --text2: #9ba3b5;
+  --text3: #5c6478;
+  --accent: #5b8af0;
+  --accent-dim: rgba(91,138,240,0.15);
+  --red: #e25555;
+  --red-dim: rgba(226,85,85,0.15);
+  --green: #3ecf7a;
+  --green-dim: rgba(62,207,122,0.15);
+  --amber: #f5a623;
+  --amber-dim: rgba(245,166,35,0.15);
+  --purple: #9b7ef0;
+  --purple-dim: rgba(155,126,240,0.15);
+  --teal: #36b8a0;
+  --teal-dim: rgba(54,184,160,0.15);
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* ——— TOPBAR ——— */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.brand-icon {
+  width: 32px; height: 32px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.brand-icon svg { width: 18px; height: 18px; fill: white; }
+.brand-name { font-weight: 700; font-size: 16px; letter-spacing: -0.3px; }
+.brand-sub { font-size: 12px; color: var(--text3); }
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.badge-live {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--green-dim);
+  color: var(--green);
+  font-size: 11px; font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(62,207,122,0.3);
+}
+.dot-live {
+  width: 7px; height: 7px;
+  background: var(--green);
+  border-radius: 50%;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.topbar-date { font-size: 12px; color: var(--text3); }
+
+/* ——— LAYOUT ——— */
+.page { max-width: 1300px; margin: 0 auto; padding: 1.5rem 2rem 3rem; }
+
+/* ——— FILTER BAR ——— */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+.filter-label { font-size: 12px; color: var(--text3); font-weight: 500; white-space: nowrap; }
+.filter-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.filter-btn {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px; font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.filter-btn:hover { background: var(--surface2); color: var(--text); }
+.filter-btn.active {
+  background: var(--accent-dim);
+  border-color: rgba(91,138,240,0.5);
+  color: var(--accent);
+}
+.filter-sep { width: 1px; height: 24px; background: var(--border2); }
+
+/* ——— KPI GRID ——— */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 1.5rem;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.kpi-card:hover { border-color: var(--border2); }
+.kpi-card .top-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.kpi-label { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.6px; }
+.kpi-icon {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.kpi-icon svg { width: 16px; height: 16px; }
+.kpi-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+.kpi-meta { font-size: 11px; color: var(--text3); }
+.kpi-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 3px;
+  border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* ——— SECTION HEADER ——— */
+.section-hd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.section-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.section-sub { font-size: 12px; color: var(--text3); }
+
+/* ——— CHARTS ROW ——— */
+.charts-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 700px) { .charts-row { grid-template-columns: 1fr; } }
+.chart-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+}
+.chart-wrap { position: relative; height: 230px; margin-top: 12px; }
+
+/* ——— TABLE ——— */
+.table-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.4rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.table-scroll { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+th:hover { color: var(--text2); }
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--surface2); }
+.id-cell { color: var(--text3); font-size: 12px; }
+.carrier-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.region-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px; font-weight: 500;
+  background: var(--surface2);
+  color: var(--text2);
+}
+.delay-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px; font-weight: 600;
+}
+.delay-badge.late {
+  background: var(--red-dim);
+  color: var(--red);
+  border: 1px solid rgba(226,85,85,0.25);
+}
+.delay-badge.ok {
+  background: var(--green-dim);
+  color: var(--green);
+  border: 1px solid rgba(62,207,122,0.25);
+}
+.delay-days {
+  font-weight: 700;
+  color: var(--text);
+}
+.priority-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 4px;
+}
+
+/* ——— BOTTOM GRID ——— */
+.bottom-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 1.5rem;
+}
+@media (max-width: 700px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+/* ——— RANKING CARD ——— */
+.ranking-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+}
+.ranking-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ranking-item:last-child { border-bottom: none; }
+.rank-num {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+}
+.rank-name { flex: 1; font-size: 13px; font-weight: 500; color: var(--text); }
+.rank-bar-wrap { flex: 2; }
+.rank-bar-bg {
+  background: var(--surface2);
+  border-radius: 3px;
+  height: 6px;
+  overflow: hidden;
+}
+.rank-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.6s ease;
+}
+.rank-val { font-size: 12px; font-weight: 700; min-width: 30px; text-align: right; }
+
+/* ——— ALERT BOX ——— */
+.alerts-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.4rem;
+}
+.alert-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+}
+.alert-item:last-child { margin-bottom: 0; }
+.alert-item.critical { background: var(--red-dim); border-left: 3px solid var(--red); }
+.alert-item.warning  { background: var(--amber-dim); border-left: 3px solid var(--amber); }
+.alert-item.info     { background: var(--accent-dim); border-left: 3px solid var(--accent); }
+.alert-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; }
+.alert-title { font-size: 13px; font-weight: 600; color: var(--text); }
+.alert-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+/* ——— LEGEND ——— */
+.legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 8px; font-size: 12px; color: var(--text3); }
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-sq { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+
+/* ——— FOOTER ——— */
+.footer {
+  text-align: center;
+  color: var(--text3);
+  font-size: 11px;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TOPBAR ═══════════════ -->
+<header class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M17 8h2a2 2 0 0 1 2 2v6h-2v-6h-2v6H5v-6a2 2 0 0 1 2-2h2V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2zm-4 0V6h-2v2h2zM3 18h18v2H3v-2z"/></svg>
+    </div>
+    <div>
+      <div class="brand-name">LogiTrack</div>
+      <div class="brand-sub">Dashboard de Entregas</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <div class="badge-live"><span class="dot-live"></span> Ao vivo</div>
+    <div class="topbar-date" id="live-date"></div>
+  </div>
+</header>
+
+<!-- ═══════════════ PAGE ═══════════════ -->
+<main class="page">
+
+  <!-- FILTER BAR -->
+  <div class="filter-bar">
+    <span class="filter-label">Transportadora:</span>
+    <div class="filter-group" id="carrier-filters">
+      <button class="filter-btn active" data-carrier="Todas">Todas</button>
+      <button class="filter-btn" data-carrier="RotaMax">RotaMax</button>
+      <button class="filter-btn" data-carrier="ViaCargo">ViaCargo</button>
+      <button class="filter-btn" data-carrier="FlashLog">FlashLog</button>
+    </div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Status:</span>
+    <div class="filter-group" id="status-filters">
+      <button class="filter-btn active" data-status="Todos">Todos</button>
+      <button class="filter-btn" data-status="Atrasado">Atrasados</button>
+      <button class="filter-btn" data-status="No prazo">No prazo</button>
+    </div>
+    <div class="filter-sep"></div>
+    <span class="filter-label">Região:</span>
+    <div class="filter-group" id="region-filters">
+      <button class="filter-btn active" data-region="Todas">Todas</button>
+      <button class="filter-btn" data-region="Sudeste">Sudeste</button>
+      <button class="filter-btn" data-region="Sul">Sul</button>
+      <button class="filter-btn" data-region="Nordeste">Nordeste</button>
+      <button class="filter-btn" data-region="Norte">Norte</button>
+      <button class="filter-btn" data-region="Centro-Oeste">Centro-Oeste</button>
+    </div>
+  </div>
+
+  <!-- KPI GRID -->
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <!-- CHARTS ROW -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="section-hd">
+        <span class="section-title">Atrasos por Transportadora</span>
+        <span class="section-sub" id="carrier-chart-sub"></span>
+      </div>
+      <div class="legend" id="carrier-legend"></div>
+      <div class="chart-wrap"><canvas id="carrierChart" role="img" aria-label="Gráfico de barras: entregas atrasadas por transportadora">Entregas atrasadas por transportadora.</canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="section-hd">
+        <span class="section-title">Atrasos por Região</span>
+        <span class="section-sub" id="region-chart-sub"></span>
+      </div>
+      <div class="legend" id="region-legend"></div>
+      <div class="chart-wrap"><canvas id="regionChart" role="img" aria-label="Gráfico de rosca: distribuição de atrasos por região">Atrasos por região.</canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="table-card">
+    <div class="table-toolbar">
+      <div class="section-hd" style="margin:0">
+        <span class="section-title">Painel de Entregas</span>
+        <span class="section-sub" id="table-count" style="margin-left:10px"></span>
+      </div>
+      <div style="font-size:11px;color:var(--text3)">Clique no cabeçalho para ordenar &nbsp;↕</div>
+    </div>
+    <div class="table-scroll">
+      <table id="main-table">
+        <thead>
+          <tr>
+            <th data-col="id">ID</th>
+            <th data-col="transportadora">Transportadora</th>
+            <th data-col="regiao">Região</th>
+            <th data-col="prazo_dias">Prazo (dias)</th>
+            <th data-col="dias_reais">Dias reais</th>
+            <th data-col="atraso_dias">Atraso</th>
+            <th data-col="status">Status</th>
+          </tr>
+        </thead>
+        <tbody id="main-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="bottom-grid">
+
+    <!-- RANKING -->
+    <div class="ranking-card">
+      <div class="section-hd">
+        <span class="section-title">Ranking de Problemas Operacionais</span>
+      </div>
+      <div id="ranking-list" style="margin-top:12px"></div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="alerts-card">
+      <div class="section-hd">
+        <span class="section-title">Alertas de Prioridade</span>
+      </div>
+      <div id="alerts-list" style="margin-top:12px"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer class="footer" style="padding: 1rem 2rem 2rem;">
+  <p>LogiTrack · Dashboard Logístico · Dados amostrais para fins didáticos · Entregas 301–310</p>
+</footer>
+
+<script>
+const RAW_DATA = [
+  { id: 301, transportadora: 'RotaMax',  regiao: 'Sudeste',      prazo_dias: 3, dias_reais: 7 },
+  { id: 302, transportadora: 'ViaCargo', regiao: 'Sul',          prazo_dias: 5, dias_reais: 5 },
+  { id: 303, transportadora: 'FlashLog', regiao: 'Nordeste',     prazo_dias: 4, dias_reais: 9 },
+  { id: 304, transportadora: 'RotaMax',  regiao: 'Norte',        prazo_dias: 6, dias_reais: 4 },
+  { id: 305, transportadora: 'ViaCargo', regiao: 'Centro-Oeste', prazo_dias: 2, dias_reais: 6 },
+  { id: 306, transportadora: 'FlashLog', regiao: 'Sul',          prazo_dias: 5, dias_reais: 12 },
+  { id: 307, transportadora: 'RotaMax',  regiao: 'Sul',          prazo_dias: 6, dias_reais: 9 },
+  { id: 308, transportadora: 'ViaCargo', regiao: 'Sudeste',      prazo_dias: 3, dias_reais: 4 },
+  { id: 309, transportadora: 'FlashLog', regiao: 'Norte',        prazo_dias: 5, dias_reais: 5 },
+  { id: 310, transportadora: 'ViaCargo', regiao: 'Nordeste',     prazo_dias: 4, dias_reais: 8 },
+];
+
+const DATA = RAW_DATA.map(d => ({
+  ...d,
+  atraso_dias: Math.max(0, d.dias_reais - d.prazo_dias),
+  status: d.dias_reais > d.prazo_dias ? 'Atrasado' : 'No prazo'
+}));
+
+const CARRIER_COLORS = { RotaMax: '#5b8af0', ViaCargo: '#36b8a0', FlashLog: '#f5a623' };
+const REGION_COLORS  = { Sudeste: '#9b7ef0', Sul: '#e25555', Nordeste: '#f5a623', Norte: '#36b8a0', 'Centro-Oeste': '#5b8af0' };
+
+let activeFilters = { carrier: 'Todas', status: 'Todos', region: 'Todas' };
+let sortState = { col: 'atraso_dias', dir: -1 };
+
+let carrierChart = null;
+let regionChart  = null;
+
+function getFiltered() {
+  return DATA.filter(d => {
+    if (activeFilters.carrier !== 'Todas' && d.transportadora !== activeFilters.carrier) return false;
+    if (activeFilters.status !== 'Todos' && d.status !== activeFilters.status) return false;
+    if (activeFilters.region !== 'Todas' && d.regiao !== activeFilters.region) return false;
+    return true;
+  });
+}
+
+function getSorted(arr) {
+  return [...arr].sort((a, b) => {
+    const av = a[sortState.col], bv = b[sortState.col];
+    if (typeof av === 'string') return sortState.dir * av.localeCompare(bv);
+    return sortState.dir * (av - bv);
+  });
+}
+
+// ——— KPIs ———
+function renderKPIs(filtered) {
+  const total      = filtered.length;
+  const atrasados  = filtered.filter(d => d.status === 'Atrasado').length;
+  const noPlanned  = filtered.filter(d => d.status !== 'Atrasado').length;
+  const taxaAtraso = total > 0 ? Math.round((atrasados / total) * 100) : 0;
+  const maxAtraso  = filtered.length ? Math.max(...filtered.map(d => d.atraso_dias)) : 0;
+  const avgAtraso  = atrasados > 0
+    ? (filtered.filter(d => d.atraso_dias > 0).reduce((s,d) => s + d.atraso_dias, 0) / atrasados).toFixed(1)
+    : '0.0';
+
+  const cards = [
+    {
+      label: 'Total de Entregas',
+      value: total,
+      meta: 'no período filtrado',
+      color: 'var(--accent)',
+      barColor: 'var(--accent)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>`,
+    },
+    {
+      label: 'Entregas Atrasadas',
+      value: atrasados,
+      meta: `${taxaAtraso}% do total`,
+      color: 'var(--red)',
+      barColor: 'var(--red)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    },
+    {
+      label: 'No Prazo',
+      value: noPlanned,
+      meta: `${100 - taxaAtraso}% do total`,
+      color: 'var(--green)',
+      barColor: 'var(--green)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+    },
+    {
+      label: 'Maior Atraso',
+      value: maxAtraso + 'd',
+      meta: `Caso mais crítico`,
+      color: 'var(--amber)',
+      barColor: 'var(--amber)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+    },
+    {
+      label: 'Atraso Médio',
+      value: avgAtraso + 'd',
+      meta: 'entre entregas atrasadas',
+      color: 'var(--purple)',
+      barColor: 'var(--purple)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>`,
+    },
+    {
+      label: 'Taxa de Atraso',
+      value: taxaAtraso + '%',
+      meta: 'das entregas filtradas',
+      color: taxaAtraso >= 60 ? 'var(--red)' : taxaAtraso >= 40 ? 'var(--amber)' : 'var(--green)',
+      barColor: taxaAtraso >= 60 ? 'var(--red)' : taxaAtraso >= 40 ? 'var(--amber)' : 'var(--green)',
+      icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>`,
+    },
+  ];
+
+  const grid = document.getElementById('kpi-grid');
+  grid.innerHTML = cards.map(c => `
+    <div class="kpi-card">
+      <div class="top-line">
+        <span class="kpi-label">${c.label}</span>
+        <div class="kpi-icon" style="background:${c.color}22; color:${c.color}">${c.icon}</div>
+      </div>
+      <div class="kpi-value" style="color:${c.color}">${c.value}</div>
+      <div class="kpi-meta">${c.meta}</div>
+      <div class="kpi-bar" style="background:${c.barColor}; width:100%"></div>
+    </div>
+  `).join('');
+}
+
+// ——— CHARTS ———
+function renderCarrierChart(filtered) {
+  const carriers = ['RotaMax', 'ViaCargo', 'FlashLog'];
+  const atrasados = carriers.map(c => filtered.filter(d => d.transportadora === c && d.status === 'Atrasado').length);
+  const total     = carriers.map(c => filtered.filter(d => d.transportadora === c).length);
+  const no_prazo  = carriers.map((c,i) => total[i] - atrasados[i]);
+
+  document.getElementById('carrier-chart-sub').textContent = `${filtered.filter(d=>d.status==='Atrasado').length} atrasos detectados`;
+  document.getElementById('carrier-legend').innerHTML = `
+    <div class="legend-item"><div class="legend-sq" style="background:#e25555"></div> Atrasado</div>
+    <div class="legend-item"><div class="legend-sq" style="background:#3ecf7a"></div> No prazo</div>
+  `;
+
+  if (carrierChart) { carrierChart.destroy(); carrierChart = null; }
+  carrierChart = new Chart(document.getElementById('carrierChart'), {
+    type: 'bar',
+    data: {
+      labels: carriers,
+      datasets: [
+        { label: 'Atrasado', data: atrasados, backgroundColor: '#e25555cc', borderRadius: 4, borderSkipped: false },
+        { label: 'No prazo', data: no_prazo,  backgroundColor: '#3ecf7acc', borderRadius: 4, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.parsed.y} entregas` } } },
+      scales: {
+        x: { stacked: true, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#9ba3b5', font: { size: 12 } } },
+        y: { stacked: true, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#9ba3b5', stepSize: 1, font: { size: 12 } }, min: 0 }
+      }
+    }
+  });
+}
+
+function renderRegionChart(filtered) {
+  const regions = [...new Set(DATA.map(d => d.regiao))];
+  const counts  = regions.map(r => filtered.filter(d => d.regiao === r && d.status === 'Atrasado').length);
+  const colors  = regions.map(r => REGION_COLORS[r]);
+
+  document.getElementById('region-chart-sub').textContent = regions.filter((_,i) => counts[i] > 0).length + ' regiões com atrasos';
+
+  const legendEl = document.getElementById('region-legend');
+  legendEl.innerHTML = regions.map((r,i) =>
+    `<div class="legend-item"><div class="legend-sq" style="background:${colors[i]}"></div>${r}</div>`
+  ).join('');
+
+  if (regionChart) { regionChart.destroy(); regionChart = null; }
+  regionChart = new Chart(document.getElementById('regionChart'), {
+    type: 'doughnut',
+    data: {
+      labels: regions,
+      datasets: [{ data: counts, backgroundColor: colors.map(c => c + 'cc'), borderWidth: 2, borderColor: '#1a1d27', hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed} atraso(s)` } } }
+    }
+  });
+}
+
+// ——— TABLE ———
+function renderTable(filtered) {
+  const sorted = getSorted(filtered);
+  document.getElementById('table-count').textContent = `${sorted.length} entrega(s) encontradas`;
+
+  const tbody = document.getElementById('main-tbody');
+  tbody.innerHTML = sorted.map(d => {
+    const isLate = d.status === 'Atrasado';
+    const cColor  = CARRIER_COLORS[d.transportadora] || '#888';
+    const pColor  = d.atraso_dias >= 5 ? 'var(--red)' : d.atraso_dias >= 3 ? 'var(--amber)' : 'var(--green)';
+
+    return `<tr>
+      <td class="id-cell">#${d.id}</td>
+      <td>
+        <span class="carrier-badge" style="background:${cColor}22;color:${cColor};border:1px solid ${cColor}44">
+          <span style="width:7px;height:7px;border-radius:50%;background:${cColor};display:inline-block"></span>
+          ${d.transportadora}
+        </span>
+      </td>
+      <td><span class="region-tag">${d.regiao}</span></td>
+      <td style="color:var(--text)">${d.prazo_dias} dias</td>
+      <td style="color:var(--text)">${d.dias_reais} dias</td>
+      <td>
+        ${isLate
+          ? `<span class="delay-days" style="color:${pColor}">+${d.atraso_dias}d</span>`
+          : `<span style="color:var(--text3);font-size:12px">—</span>`
+        }
+      </td>
+      <td>
+        <span class="delay-badge ${isLate ? 'late' : 'ok'}">
+          <span style="width:6px;height:6px;border-radius:50%;background:${isLate?'var(--red)':'var(--green)'};display:inline-block"></span>
+          ${d.status}
+        </span>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ——— SORT ———
+document.querySelectorAll('th[data-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const col = th.dataset.col;
+    if (sortState.col === col) sortState.dir *= -1;
+    else { sortState.col = col; sortState.dir = -1; }
+    renderTable(getFiltered());
+  });
+});
+
+// ——— RANKING ———
+function renderRanking(filtered) {
+  const items = [
+    ...['RotaMax','ViaCargo','FlashLog'].map(c => ({
+      label: c,
+      val: filtered.filter(d => d.transportadora === c && d.status === 'Atrasado').length,
+      type: 'carrier',
+      color: CARRIER_COLORS[c]
+    })),
+    ...['Sudeste','Sul','Nordeste','Norte','Centro-Oeste'].map(r => ({
+      label: r,
+      val: filtered.filter(d => d.regiao === r && d.status === 'Atrasado').length,
+      type: 'region',
+      color: REGION_COLORS[r]
+    })),
+  ].filter(i => i.val > 0).sort((a,b) => b.val - a.val).slice(0, 6);
+
+  const maxVal = items.length ? items[0].val : 1;
+  const rankColors = ['#e25555', '#f5a623', '#f5a623', '#5b8af0', '#5b8af0', '#9b7ef0'];
+
+  const el = document.getElementById('ranking-list');
+  if (!items.length) {
+    el.innerHTML = '<p style="color:var(--text3);font-size:13px;text-align:center;padding:1rem">Nenhum atraso nos filtros selecionados 🎉</p>';
+    return;
+  }
+
+  el.innerHTML = items.map((item, i) => `
+    <div class="ranking-item">
+      <div class="rank-num" style="background:${rankColors[i]}22;color:${rankColors[i]}">${i+1}</div>
+      <div>
+        <div class="rank-name">${item.label}</div>
+        <div style="font-size:11px;color:var(--text3)">${item.type === 'carrier' ? 'Transportadora' : 'Região'}</div>
+      </div>
+      <div class="rank-bar-wrap">
+        <div class="rank-bar-bg">
+          <div class="rank-bar-fill" style="width:${Math.round((item.val/maxVal)*100)}%;background:${item.color}"></div>
+        </div>
+      </div>
+      <div class="rank-val" style="color:${item.color}">${item.val}</div>
+    </div>
+  `).join('');
+}
+
+// ——— ALERTS ———
+function renderAlerts(filtered) {
+  const alerts = [];
+  const atrasados = filtered.filter(d => d.status === 'Atrasado');
+
+  const maxDelay = atrasados.length ? Math.max(...atrasados.map(d => d.atraso_dias)) : 0;
+  const criticalEntry = atrasados.find(d => d.atraso_dias === maxDelay);
+
+  if (criticalEntry && maxDelay >= 5) {
+    alerts.push({
+      type: 'critical',
+      icon: '🚨',
+      title: `Entrega #${criticalEntry.id} — atraso crítico de ${maxDelay} dias`,
+      desc: `${criticalEntry.transportadora} · ${criticalEntry.regiao} · Previsto: ${criticalEntry.prazo_dias}d · Realizado: ${criticalEntry.dias_reais}d`
+    });
+  }
+
+  const flashDelays = atrasados.filter(d => d.transportadora === 'FlashLog');
+  if (flashDelays.length >= 2) {
+    alerts.push({
+      type: 'critical',
+      icon: '⚠️',
+      title: `FlashLog: ${flashDelays.length} entregas atrasadas`,
+      desc: `Transportadora com maior volume de atrasos no período filtrado.`
+    });
+  }
+
+  const highDelayRegions = ['Sul','Nordeste','Centro-Oeste'].filter(r => atrasados.some(d => d.regiao === r));
+  if (highDelayRegions.length > 0) {
+    alerts.push({
+      type: 'warning',
+      icon: '📍',
+      title: `Regiões com atrasos: ${highDelayRegions.join(', ')}`,
+      desc: `Verificar capacidade operacional e rotas nessas localidades.`
+    });
+  }
+
+  const taxaGeral = DATA.length > 0 ? Math.round((DATA.filter(d=>d.status==='Atrasado').length / DATA.length)*100) : 0;
+  if (taxaGeral >= 60) {
+    alerts.push({
+      type: 'critical',
+      icon: '📊',
+      title: `Taxa de atraso geral: ${taxaGeral}% — Acima do tolerável`,
+      desc: `Revisão operacional urgente recomendada para todo o processo logístico.`
+    });
+  }
+
+  if (atrasados.some(d => d.transportadora === 'ViaCargo' && d.atraso_dias >= 4)) {
+    alerts.push({
+      type: 'warning',
+      icon: '🔔',
+      title: 'ViaCargo com atraso acima de 4 dias',
+      desc: `Entrega #310 (Nordeste) com ${DATA.find(d=>d.id===310)?.atraso_dias}d de atraso.`
+    });
+  }
+
+  alerts.push({
+    type: 'info',
+    icon: 'ℹ️',
+    title: 'RotaMax e ViaCargo com entregas no prazo',
+    desc: `IDs 302, 304, 308 e 309 entregues dentro ou antes do prazo previsto.`
+  });
+
+  const el = document.getElementById('alerts-list');
+  el.innerHTML = alerts.slice(0, 5).map(a => `
+    <div class="alert-item ${a.type}">
+      <div class="alert-icon">${a.icon}</div>
+      <div>
+        <div class="alert-title">${a.title}</div>
+        <div class="alert-desc">${a.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ——— FILTER WIRING ———
+function wireFilters(groupId, filterKey) {
+  document.getElementById(groupId).addEventListener('click', e => {
+    const btn = e.target.closest('.filter-btn');
+    if (!btn) return;
+    document.querySelectorAll(`#${groupId} .filter-btn`).forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilters[filterKey] = btn.dataset[filterKey === 'carrier' ? 'carrier' : filterKey === 'status' ? 'status' : 'region'];
+    renderAll();
+  });
+}
+wireFilters('carrier-filters', 'carrier');
+wireFilters('status-filters', 'status');
+wireFilters('region-filters', 'region');
+
+// ——— RENDER ALL ———
+function renderAll() {
+  const f = getFiltered();
+  renderKPIs(f);
+  renderCarrierChart(f);
+  renderRegionChart(f);
+  renderTable(f);
+  renderRanking(f);
+  renderAlerts(f);
+}
+
+// ——— DATE ———
+function updateDate() {
+  const now = new Date();
+  document.getElementById('live-date').textContent = now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+}
+updateDate();
+setInterval(updateDate, 60000);
+
+// ——— INIT ———
+renderAll();
+</script>
+</body>
+</html>
